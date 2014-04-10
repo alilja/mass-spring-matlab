@@ -41,3 +41,11 @@ for(i = 1:len)
     circle(nodes(i).position(1), nodes(i).position(2), 1);
 end
 
+len = max(size(springs));
+for(i = 1:num_frames)
+    % tick
+    for(j = 1:len)
+        springs(j).apply();
+        %% convert force to vel, render
+    end
+end
