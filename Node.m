@@ -10,14 +10,15 @@ classdef Node
     end
     
     methods
-        function obj = Node(position, force, mass, locked)
+        function obj = Node(id, position, force, mass, locked)
             if(nargin > 0)
                 obj.position = position;
                 obj.force = force;
                 obj.mass = mass;
                 obj.velocity = [0 0];
                 obj.locked = 0;
-                if(nargin > 3)
+                obj.id = id;
+                if(nargin > 4)
                     obj.locked = locked;
                 end
             end
