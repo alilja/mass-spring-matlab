@@ -18,7 +18,7 @@ classdef Node
                 obj.velocity = [0 0];
                 obj.locked = 0;
                 if(nargin > 3)
-                    obj.locked = 1;
+                    obj.locked = locked;
                 end
             end
         end
@@ -30,4 +30,5 @@ classdef Node
             end
         end
     end
+    
 end

@@ -18,7 +18,7 @@ classdef Spring
             obj.attached_node_b = b;
         end
         
-        function obj = apply()
+        function obj = apply(obj)
             diff = obj.attached_node_a.position - obj.attached_node_b.position;
             distance = norm(diff);
             diff = diff/distance;
@@ -30,10 +30,11 @@ classdef Spring
 
             obj.attached_node_b.force = obj.attached_node_b.force + diff*force;
             obj.attached_node_a.force = obj.attached_node_a.force - diff*force;
+            if(obj.attached_node_b.force > 0)
+                force
+            end
             
             % tell the nodes to update their velocity and position
-            obj.attached_node_a.update;
-            obj.attached_node_b.update; 
         end
     end
 end

@@ -13,7 +13,7 @@ springs = [];
 for(i = 1:num_segments)
     % create nodes and springs
     left_edge  = Node(start_pos + [-width/2 step*i],0,10);
-    spine      = Node(start_pos + [0 step*i],2,10);
+    spine      = Node(start_pos + [0 step*i],0,10);
     right_edge = Node(start_pos + [width/2 step*i],0,10);
     % a node is spine %
     k = 3
@@ -35,17 +35,24 @@ for(i = 1:num_segments)
     end
 end
 
-figure, hold on;
-len = max(size(nodes));
-for(i = 1:len)
-    circle(nodes(i).position(1), nodes(i).position(2), 1);
-end
+node_len   = max(size(nodes));
+spring_len = max(size(springs))
 
-len = max(size(springs));
-for(i = 1:num_frames)
+figure; hold on;
+
+for(frame_num = 1:num_frames)
+    frame_num
+    k = waitforbuttonpress();
     % tick
-    for(j = 1:len)
+    nodes(1).force = 2;
+    
+    for(j = 1:spring_len)
         springs(j).apply();
-        
+    end   
+    
+    for(i = 1:node_len)
+        nodes(i) = nodes(i).update();
+        circle(nodes(i).position(1), nodes(i).position(2), 1);
     end
+    
 end
