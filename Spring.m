@@ -30,6 +30,10 @@ classdef Spring
 
             obj.attached_node_b.force = obj.attached_node_b.force + diff*force;
             obj.attached_node_a.force = obj.attached_node_a.force - diff*force;
+            
+            % tell the nodes to update their velocity and position
+            obj.attached_node_a.update;
+            obj.attached_node_b.update; 
         end
     end
 end

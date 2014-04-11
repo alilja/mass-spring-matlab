@@ -46,6 +46,6 @@ for(i = 1:num_frames)
     % tick
     for(j = 1:len)
         springs(j).apply();
-        %% convert force to vel, render
+        
     end
 end
