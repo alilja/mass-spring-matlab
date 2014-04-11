@@ -7,6 +7,8 @@ classdef Spring
         damp;
         attached_node_a;
         attached_node_b;
+        node_a_id;
+        node_b_id;
         id;
     end
     
@@ -18,6 +20,9 @@ classdef Spring
             obj.attached_node_a = a;
             obj.attached_node_b = b;
             obj.id = id;
+            
+            obj.node_a_id = obj.attached_node_a.id;
+            obj.node_b_id = obj.attached_node_b.id;
         end
         
         function obj = apply(obj)

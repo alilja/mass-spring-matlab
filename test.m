@@ -20,7 +20,7 @@ for(i = 1:num_segments)
     damp = 0.5
     spring_id_base = max(size(springs));
     left_spring  = Spring(spring_id_base + 1, width/2, k, damp, spine, left_edge);
-    right_spring = Spring(spring_id_base + 2, width/2, k, damp, spine, left_edge);
+    right_spring = Spring(spring_id_base + 2, width/2, k, damp, spine, right_edge);
     if(i > 1)
         % a is previous node
         left_connector  = Spring(spring_id_base + 3, step, k, damp, nodes((i-1)*3 - 2), left_edge);
