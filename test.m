@@ -58,12 +58,12 @@ for(frame_num = 1:num_frames)
     pause(0.1)
     % tick    
     for(j = 1:spring_len)
-        SPRINGS(j).apply();
+        SPRINGS(j).tick();
     end   
     
     for(i = 1:node_len)
         NODES(i).add_force([0 9.8]);
-        NODES(i) = NODES(i).update();
+        NODES(i) = NODES(i).tick();
         circle(NODES(i).position(1), NODES(i).position(2), 1);
     end
 end

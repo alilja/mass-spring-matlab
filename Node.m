@@ -26,17 +26,17 @@ classdef Node < handle
             end
         end
         
-        function obj = update(obj)
+        function obj = add_force(obj, force)
+            obj.force = obj.force + force;
+        end
+        
+        function obj = tick(obj)
             obj.velocity = obj.velocity + obj.force / obj.mass;
             obj.velocity = obj.velocity * obj.damp;
             obj.force = [0 0];
             if(obj.locked == 0) % make sure locked nodes don't move
                 obj.position = obj.position + obj.velocity;
             end
-        end
-        
-        function obj = add_force(obj, force)
-            obj.force = obj.force + force;
         end
     end
     

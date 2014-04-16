@@ -27,7 +27,7 @@ classdef Spring < handle
             end
         end
         
-        function obj = apply(obj)
+        function obj = tick(obj)
             diff = obj.attached_node_b.position - obj.attached_node_a.position
             distance = norm(diff)
             diff = diff/distance
