@@ -28,21 +28,19 @@ classdef Spring < handle
         end
         
         function obj = apply(obj)
-            diff = obj.attached_node_a.position - obj.attached_node_b.position
+            diff = obj.attached_node_b.position - obj.attached_node_a.position
             distance = norm(diff)
             diff = diff/distance
 
             compression = distance - obj.length
-            vel = obj.attached_node_a.velocity - obj.attached_node_b.velocity
+            vel = obj.attached_node_b.velocity - obj.attached_node_a.velocity
 
-            force = compression * obj.k + dot(vel, diff)*obj.damp
-
-            obj.attached_node_a.force = obj.attached_node_a.force - diff*force;
-            obj.attached_node_b.force = obj.attached_node_b.force + diff*force
-            
-            forces = [obj.node_a_id obj.node_b_id  diff*force]
+            force = obj.k * diff * compression + dot(diff, vel) * obj.damp * diff;  
             
             % tell the nodes to update their velocity and position
+            obj.attached_node_a.add_force(force);
+            obj.attached_node_b.add_force(-force);
+            
         end
     end
 end

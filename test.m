@@ -1,4 +1,4 @@
-num_frames = 50;
+num_frames = 500;
 
 num_segments = 20;
 start_pos = [10 10];
@@ -38,31 +38,31 @@ SPRINGS = [];
 
 % simple test w/ rope
 for(x = 1:8)      
-    NODES = [NODES Node(x, [0 2+x*5], 0, 10)]; %#ok<AGROW>
+    NODES = [NODES Node(x, [0 2+x*5], [0 0], 10, 0.5)]; %#ok<AGROW>
     if(x > 1)
         SPRINGS = [SPRINGS Spring(x-1, 5, 3, 0.5, NODES(x-1), NODES(x))];
     end
 end
 
 NODES(8).position = NODES(8).position + [30 0];
+NODES(1).locked = 1;
 
 node_len   = max(size(NODES));
 spring_len = max(size(SPRINGS))
 
 figure; hold on;
 
-% Need some way to process nodes and springs in parallel
-% Having springs know about nodes was a great way to do it...
-
 for(frame_num = 1:num_frames)
     frame_num
-    k = waitforbuttonpress();
+    %k = waitforbuttonpress();
+    pause(0.1)
     % tick    
     for(j = 1:spring_len)
         SPRINGS(j).apply();
     end   
     
     for(i = 1:node_len)
+        NODES(i).add_force([0 9.8]);
         NODES(i) = NODES(i).update();
         circle(NODES(i).position(1), NODES(i).position(2), 1);
     end
