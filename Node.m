@@ -1,4 +1,4 @@
-classdef Node
+classdef Node < handle
 % the mass part of the system
     properties
         position;
