@@ -49,17 +49,41 @@ for(i = 1:num_segments)
     end
 end
 
-figure; hold on;
+%figure; hold on;
 % process image
 I = imread('test.png');
 I = im2bw(I);
 edges = edge(I,'canny');
+
 % find edges
 % THERE HAS TO BE A BETTER WAY TO DO THIS
+image_size = size(edges);
+left_found = 0;
+left_edges = [];
+right_edges = [];
+for(row = 1:image_size(1))
+    for(col = 1:image_size(2))
+        if(edges(row, col) == 1)
+            if(left_found == 0)
+                left_edges = [left_edges Edge(row, col)];
+                left_found = 1;
+            else
+                right_edges = [right_edges Edge(row, col)];
+                left_found = 0;
+            end
+        end
+    end
+end
 
+% now randomly sample each left/right edge pair and use them to create the
+% mesh
 
+%%% IT WILL BE DONE %%%
+
+% process
 %for(iteration = 1:30)
 %    system.tick();
 %end
 
+% render
 %circle(system.NODES(i).position(1), system.NODES(i).position(2), 1);
