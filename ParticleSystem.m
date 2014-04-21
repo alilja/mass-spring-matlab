@@ -9,13 +9,16 @@ classdef ParticleSystem < handle
     
     methods
         function obj = ParticleSystem(obj, nodes, springs, force)
+            obj.num_nodes = 0;
+            obj.num_springs = 0;
+            obj.system_force = [0 0];
             if(nargin > 0)
                 obj.NODES = nodes;
                 obj.SPRINGS = springs;
                 obj.num_nodes = max(size(nodes));
                 obj.num_springs = max(size(springs));
                 obj.system_force = force;
-            end
+            end            
         end
         
         function obj = tick(obj, render)

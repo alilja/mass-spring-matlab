@@ -1,4 +1,10 @@
-num_frames = 500;
+% 1. process image
+% 2. walk image from left -> right and find edges
+% 2a. store left and right edges in separate vectors
+% 3. use those edge coordinates to populate mesh, going from the top down
+% 4. run mass-spring
+% 5. ???
+% 6. profit
 
 num_segments = 20;
 start_pos = [10 10];
@@ -44,12 +50,16 @@ for(i = 1:num_segments)
 end
 
 figure; hold on;
+% process image
+I = imread('test.png');
+I = im2bw(I);
+edges = edge(I,'canny');
+% find edges
+% THERE HAS TO BE A BETTER WAY TO DO THIS
 
-for(frame_num = 1:num_frames)
-    frame_num
-    for(i = 1:system.num_nodes)
-        circle(system.NODES(i).position(1), system.NODES(i).position(2), 1);
-    end
-    pause(0.1)
-    system.tick();
-end
+
+%for(iteration = 1:30)
+%    system.tick();
+%end
+
+%circle(system.NODES(i).position(1), system.NODES(i).position(2), 1);
