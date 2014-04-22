@@ -32,7 +32,7 @@ classdef Spring < handle
             distance = norm(diff);
             diff = diff/distance;
 
-            compression = distance - obj.length;
+            compression = 1;%distance - obj.length;
             vel = round(obj.attached_node_b.velocity - obj.attached_node_a.velocity);
 
             force = diff*(obj.k * compression + dot(diff, vel) * obj.damp);  

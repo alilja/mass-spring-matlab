@@ -2,14 +2,14 @@
 
 classdef Edge
     properties
-        x
-        y
+        i
+        j
     end
     
     methods
-        function obj = Edge(x, y)
-            obj.x = x;
-            obj.y = y;
+        function obj = Edge(i, j)
+            obj.i = i;
+            obj.j = j;
         end
     end
 end
