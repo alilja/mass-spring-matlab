@@ -1,5 +1,6 @@
 % add lines to mesh
-% figure out disappearing spine issue
+% best way to do above is with nodes knowing about which nodes they're
+% attached to
 
 num_segments = 50;
 start_pos = [0 0];
@@ -11,7 +12,7 @@ log = Logger('test.log',0,1);
 
 %figure; hold on;
 % process image
-I = imread('test2.png');
+I = imread('test.png');
 I = im2bw(I);
 [edges, tresh, gv, gh] = edge(I,'sobel');
 
@@ -103,6 +104,5 @@ for(i = 1:system.num_nodes-1)
     log.warning(num2str(system.NODES(i).id));
     log.warning(num2str(system.NODES(i).position));
     
-    plot([system.NODES(i).position(1) system.NODES(i+1).position(1) ...
-          system.NODES(i).position(2) system.NODES(i+1).position(2)]);
+    plot([system.NODES(i).position(1) system.NODES(i+1).position(1)],[system.NODES(i).position(2) system.NODES(i+1).position(2)]);
 end
