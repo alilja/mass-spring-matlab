@@ -22,6 +22,7 @@ a_edges = [];
 b_edges = [];
 centerlines = [];
 dist = max(max(bwdist(I),[],1));
+
 for(i = 1:max(size(edge_row)))
     if(mod(i,5) == 0)
         x = edge_row(i);
@@ -50,13 +51,13 @@ for(i = 1:num_segments)
     k = 0.5;
     damp = 0.1;
     spring_id_base = system.num_springs;
-    left_spring  = Spring(spring_id_base + 1, dist, k, damp, spine, left_edge);
-    right_spring = Spring(spring_id_base + 2, dist, k, damp, spine, right_edge);
+    left_spring  = Spring(spring_id_base + 1, 2, k, damp, spine, left_edge);
+    right_spring = Spring(spring_id_base + 2, 2, k, damp, spine, right_edge);
     if(i > 1)
         % a is previous node
-        left_connector  = Spring(spring_id_base + 3, step, k, damp, system.NODES((i-1)*3 - 2), left_edge);
-        spine_connector = Spring(spring_id_base + 4, step, k, damp, system.NODES((i-1)*3 - 1), spine);
-        right_connector = Spring(spring_id_base + 5, step, k, damp, system.NODES((i-1)*3), right_edge);
+        left_connector  = Spring(spring_id_base + 3, 2, k, damp, system.NODES((i-1)*3 - 2), left_edge);
+        spine_connector = Spring(spring_id_base + 4, 2, k, damp, system.NODES((i-1)*3 - 1), spine);
+        right_connector = Spring(spring_id_base + 5, 2, k, damp, system.NODES((i-1)*3), right_edge);
     end
     
    % populate lists
@@ -76,21 +77,32 @@ imshow(edges);
 hold on;
 
 % process
-for(iteration = 1:30)
+for(iteration = 1:20)
+    iteration
     system.tick();
-pause(0.1);
-for(i = 1:system.num_nodes)
-    circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
-end
-log.note(num2str(max(size(system.NODES(i)))));
-    
+    log.error(num2str(iteration));
+    %pause(0.1);
+    for(i = 1:system.num_nodes)
+    %    circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
+            log.warning(num2str(system.NODES(i).id));
+            log.warning(num2str(system.NODES(i).position));
+       
+    end
+log.note('');
+log.note('');
+log.note('');
+log.note('');
 end
 
 hold off;
 imshow(edges);
 hold on;
-log.note('\n\n');
-log.note(num2str(max(size(system.NODES(i)))));
-for(i = 1:system.num_nodes)
+log.note(sprintf('\n\n'));
+for(i = 1:system.num_nodes-1)
     circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
+    log.warning(num2str(system.NODES(i).id));
+    log.warning(num2str(system.NODES(i).position));
+    
+    plot([system.NODES(i).position(1) system.NODES(i+1).position(1) ...
+          system.NODES(i).position(2) system.NODES(i+1).position(2)]);
 end

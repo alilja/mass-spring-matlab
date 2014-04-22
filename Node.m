@@ -35,7 +35,9 @@ classdef Node < handle
             obj.velocity = obj.velocity * obj.damp;
             obj.force = [0 0];
             if(obj.locked == 0) % make sure locked nodes don't move
-                obj.position = obj.position + obj.velocity;
+                if(~isnan(obj.position + obj.velocity))
+                    obj.position = obj.position + obj.velocity;
+                end
             end
         end
     end
