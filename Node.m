@@ -8,6 +8,7 @@ classdef Node < handle
         id;
         locked;
         damp;
+        attached_nodes;
     end
     
     methods
@@ -23,6 +24,7 @@ classdef Node < handle
                 if(nargin > 5)
                     obj.locked = locked;
                 end
+                obj.attached_nodes = [];
             end
         end
         
@@ -31,15 +33,16 @@ classdef Node < handle
         end
         
         function obj = tick(obj)
+            old_pos = obj.position;
             obj.velocity = obj.velocity + obj.force / obj.mass;
             obj.velocity = obj.velocity * obj.damp;
             obj.force = [0 0];
             if(obj.locked == 0) % make sure locked nodes don't move
-                if(~isnan(obj.position + obj.velocity))
-                    obj.position = obj.position + obj.velocity;
-                end
+                obj.position = obj.position + obj.velocity;
+            end
+            if(isnan(obj.position))
+                obj.position = old_pos;
             end
         end
-    end
-    
+    end    
 end

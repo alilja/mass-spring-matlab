@@ -1,32 +1,39 @@
-% 1. add lines to mesh
-% best way to do above is with nodes knowing about which nodes they're
-% attached to
+% TO DO
+% 1. work on sorting nodes by location
+% 2. add video
 
-% 2. have two endpoint spine nodes that connect to edge nodes in next segment
-% 3. switch from random sampling to consistent intervals
-% 4. test on worm videos
+%%%%%%%%%%%
+% OPTIONS %
+%%%%%%%%%%%
+% Mesh Options
+num_segments = 10; % number of segments in the skeleton
+num_ticks = 20;    % number of times the soft body model should run
 
-num_segments = 10;
-num_ticks = 20;
-show_normals = 0;
-show_ribs = 1;
+% Display Options
+show_normals = 0;        % show edge normals
+show_ribs = 0;           % show node placement ribs
+show_node_alignment = 0; % show nodes during each tick of model
+
+% Video Options
 vid = VideoReader('shisto.avi');
+start_frame = 50;
+vid_scale = 0.66;
 
 
-show_stuff = show_normals + show_ribs;
+show_stuff = show_normals + show_ribs + show_node_alignment;
 
 system = ParticleSystem();
 log = Logger('test.log',0,1);
 
 % process image
-first_frame = imresize(read(vid,50),0.66);
+first_frame = imresize(read(vid,start_frame),vid_scale);
 mask = roipoly(first_frame);
 background = first_frame;
 for i = 1:3
     background(:,:,i) = roifill(first_frame(:,:,i),mask);
 end
 %%
-% find worm edges
+% get binary worm fill
 target = rgb2gray(background - first_frame);
 target = imerode(target, ones(2));
 target = imdilate(target, strel('disk',20));
@@ -51,14 +58,20 @@ if(show_stuff)
     hold on;
 end
 
-for(i = 1:max(size(edge_row)))
-    if(mod(i,5) == 0)
+mod_factor = floor((length(edge_row)/num_segments)/2)
+
+for(i = 1:length(edge_row))
+    if(mod(i,mod_factor) == 0)
         x1 = edge_row(i);
         y1 = edge_col(i);
         dir = atan2(gv(x1,y1), gh(x1,y1));
         
+        if(show_normals)
+            plot([y1 y1+sin(pi+dir)*5],[x1 x1+cos(pi+dir)*5]);
+        end
+        
         normal = NaN;
-        for(n = 1:round(dist*2))
+        for(n = 1:round(dist*2.5))
             x = round(x1 + cos(dir+pi)*n);
             y = round(y1 + sin(dir+pi)*n);
             if(isnan(normal))
@@ -67,15 +80,12 @@ for(i = 1:max(size(edge_row)))
                     a_edges = [a_edges Edge(x, y)];
                     b_edges = [b_edges Edge(x1, y1)];
                     centerlines = [centerlines Edge(x1 + cos(dir+pi)*dist, ...
-                                    y1 + sin(dir+pi)*dist)]
+                                    y1 + sin(dir+pi)*dist)];
                     if(show_ribs)
                         plot([y1 y],[x1 x],'r');
                     end
                 end
             end
-        end
-        if(show_normals)
-            plot([y y+sin(pi+dir)*dist*2],[x x+cos(pi+dir)*dist*2]);
         end
     end
 end
@@ -85,10 +95,11 @@ if(show_stuff)
 end    
 
 % now randomly sample each left/right edge pair
-k = randperm(size(a_edges,2)); 
-selected_left = a_edges(k(1:num_segments));
-selected_right = b_edges(k(1:num_segments));
-selected_centers = centerlines(k(1:num_segments));
+sort_list = [a_edges; b_edges; centerlines;];
+sort_list = sort(sort_list,2);
+selected_left    = sort_list(1, 1:num_segments);
+selected_right   = sort_list(2, 1:num_segments);
+selected_centers = sort_list(3, 1:num_segments);
 
 % create the mesh
 for(i = 1:num_segments)
@@ -123,9 +134,11 @@ for(i = 1:num_segments)
     end
 end
 
-hold off;
-imshow(edges);
-hold on;
+if(show_node_alignment)
+    hold off;
+    imshow(edges);
+    hold on;
+end
 
 % process
 for(iteration = 1:num_ticks)
@@ -135,25 +148,25 @@ for(iteration = 1:num_ticks)
     for(i = 1:system.num_nodes)
         log.warning(num2str(system.NODES(i).id));
         log.warning(num2str(system.NODES(i).position));
-        circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
+        if(show_node_alignment)
+            circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
+        end
     end
     pause(0.1);
-    log.note('');
-    log.note('');
-    log.note('');
-    log.note('');
+    log.note('-----------------------------');
 end
 
+% render
 hold off;
 imshow(edges);
 hold on;
-
-log.note(sprintf('\n\n'));
-for(i = 1:system.num_nodes-1)
-    circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
-    log.warning(num2str(system.NODES(i).id));
-    log.warning(num2str(system.NODES(i).position));
-    if(mod(i+1,3))
-        plot([system.NODES(i).position(1) system.NODES(i+1).position(1)],[system.NODES(i).position(2) system.NODES(i+1).position(2)]);
+for(i = 1:system.num_nodes)
+    this_node = system.NODES(i);
+    circle(this_node.position(1), this_node.position(2), 5);
+    log.warning(num2str(this_node.id));
+    log.warning(num2str(this_node.position));
+    for(n = 1:length(this_node.attached_nodes))
+        plot([this_node.position(1) this_node.attached_nodes(n).position(1)],...
+             [this_node.position(2) this_node.attached_nodes(n).position(2)]);
     end
 end

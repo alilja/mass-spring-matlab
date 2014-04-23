@@ -24,6 +24,9 @@ classdef Spring < handle
 
                 obj.node_a_id = a.id;
                 obj.node_b_id = b.id;
+                
+                a.attached_nodes = [a.attached_nodes b];
+                b.attached_nodes = [b.attached_nodes a];
             end
         end
         
