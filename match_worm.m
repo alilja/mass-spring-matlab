@@ -1,40 +1,62 @@
-% add lines to mesh
+% 1. add lines to mesh
 % best way to do above is with nodes knowing about which nodes they're
 % attached to
 
-num_segments = 50;
-start_pos = [0 0];
-width = 20;
-length = 80;
+% 2. have two endpoint spine nodes that connect to edge nodes in next segment
+% 3. switch from random sampling to consistent intervals
+% 4. test on worm videos
+
+num_segments = 10;
+num_ticks = 20;
 
 system = ParticleSystem();
 log = Logger('test.log',0,1);
 
-%figure; hold on;
 % process image
-I = imread('test.png');
-I = im2bw(I);
-[edges, tresh, gv, gh] = edge(I,'sobel');
+first_frame = imresize(read(vid,50),0.66);
+mask = roipoly(first_frame);
+background = first_frame;
+for i = 1:3
+    background(:,:,i) = roifill(first_frame(:,:,i),mask);
+end
+%%
+% find worm edges
+target = rgb2gray(background - first_frame);
+target = imerode(target, ones(2));
+target = imdilate(target, strel('disk',20));
+target = imclose(target,strel('disk',20));
+target = imerode(target, strel('disk',20));
+target = target > 10;
+[edges, tresh, gv, gh] = edge(target,'sobel');
+skel = bwmorph(target, 'skel', Inf); % bwmorph(~target,'endpoints');
+[skel_x skel_y] = imgradientxy(skel);
 
+% find edges
 edge_dirs = atan2(gv, gh);
 edge_dirs = edge_dirs(edge_dirs ~= 0);
 [edge_row edge_col] = find(edges);
+
+% calculate normals and fine opposite edges
 a_edges = [];
 b_edges = [];
 centerlines = [];
-dist = max(max(bwdist(I),[],1));
-
-for(i = 1:max(size(edge_row)))
-    if(mod(i,5) == 0)
+dist = max(max(bwdist(~target),[],1))
+imshow(first_frame);
+k = waitforbuttonpress;
+imshow(skel_x);
+hold on;
+for(i = 1:round(max(size(edge_row))))
+    if(mod(i,2) == 0)
         x = edge_row(i);
         y = edge_col(i);
         dir = atan2(gv(x, y), gh(x,y));
         a_edges = [a_edges Edge(y, x)];
-        b_edges = [b_edges Edge(y+sin(dir)*2*dist, x+cos(dir)*2*dist)];
+        b_edges = [b_edges Edge(y+sin(pi+dir)*2*dist, x+cos(pi+dir)*2*dist)];
+        plot([y y+sin(pi+dir)*dist*0.5],[x x+cos(pi+dir)*dist*0.5]);
         centerlines = [centerlines Edge(y+sin(dir)*dist, x+cos(dir)*dist)];
     end
 end
-
+if(0)
 % now randomly sample each left/right edge pair
 k = randperm(size(a_edges,2)); 
 selected_left = a_edges(k(1:num_segments));
@@ -45,9 +67,9 @@ selected_centers = centerlines(k(1:num_segments));
 step = length/num_segments;
 for(i = 1:num_segments)
     % create NODES and SPRINGS
-    left_edge  = Node(i*3 - 2, start_pos + [selected_left(i).i selected_left(i).j],[0 0],10,0.5,1);
-    spine      = Node(i*3 - 1, start_pos + [selected_centers(i).i selected_centers(i).j],[0 0],10, 0.5);
-    right_edge = Node(i*3, start_pos + [selected_right(i).i selected_right(i).j],[0 0],10, 0.5, 1);
+    left_edge  = Node(i*3 - 2, [selected_left(i).i selected_left(i).j],[0 0],10,0.5,1);
+    spine      = Node(i*3 - 1, [selected_centers(i).i selected_centers(i).j],[0 0],10, 0.5);
+    right_edge = Node(i*3, [selected_right(i).i selected_right(i).j],[0 0],10, 0.5, 1);
     % a node is spine %
     k = 0.5;
     damp = 0.1;
@@ -74,25 +96,25 @@ for(i = 1:num_segments)
         system.add_spring(right_connector);
     end
 end
+
 imshow(edges);
 hold on;
 
 % process
-for(iteration = 1:20)
+for(iteration = 1:num_ticks)
     iteration
     system.tick();
     log.error(num2str(iteration));
-    %pause(0.1);
     for(i = 1:system.num_nodes)
-    %    circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
-            log.warning(num2str(system.NODES(i).id));
-            log.warning(num2str(system.NODES(i).position));
-       
+        log.warning(num2str(system.NODES(i).id));
+        log.warning(num2str(system.NODES(i).position));
+        circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
     end
-log.note('');
-log.note('');
-log.note('');
-log.note('');
+    pause(0.1);
+    log.note('');
+    log.note('');
+    log.note('');
+    log.note('');
 end
 
 hold off;
@@ -103,6 +125,8 @@ for(i = 1:system.num_nodes-1)
     circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
     log.warning(num2str(system.NODES(i).id));
     log.warning(num2str(system.NODES(i).position));
-    
-    plot([system.NODES(i).position(1) system.NODES(i+1).position(1)],[system.NODES(i).position(2) system.NODES(i+1).position(2)]);
+    if(mod(i+1,3))
+        plot([system.NODES(i).position(1) system.NODES(i+1).position(1)],[system.NODES(i).position(2) system.NODES(i+1).position(2)]);
+    end
+end
 end
