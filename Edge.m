@@ -7,9 +7,9 @@ classdef Edge
     end
     
     methods
-        function obj = Edge(i, j)
-            obj.i = i;
-            obj.j = j;
+        function obj = Edge(x, y)
+            obj.i = y;
+            obj.j = x;
         end
     end
 end

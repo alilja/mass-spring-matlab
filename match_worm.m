@@ -8,6 +8,12 @@
 
 num_segments = 10;
 num_ticks = 20;
+show_normals = 0;
+show_ribs = 1;
+vid = VideoReader('shisto.avi');
+
+
+show_stuff = show_normals + show_ribs;
 
 system = ParticleSystem();
 log = Logger('test.log',0,1);
@@ -29,7 +35,6 @@ target = imerode(target, strel('disk',20));
 target = target > 10;
 [edges, tresh, gv, gh] = edge(target,'sobel');
 skel = bwmorph(target, 'skel', Inf); % bwmorph(~target,'endpoints');
-[skel_x skel_y] = imgradientxy(skel);
 
 % find edges
 edge_dirs = atan2(gv, gh);
@@ -40,23 +45,45 @@ edge_dirs = edge_dirs(edge_dirs ~= 0);
 a_edges = [];
 b_edges = [];
 centerlines = [];
-dist = max(max(bwdist(~target),[],1))
-imshow(first_frame);
-k = waitforbuttonpress;
-imshow(skel_x);
-hold on;
-for(i = 1:round(max(size(edge_row))))
-    if(mod(i,2) == 0)
-        x = edge_row(i);
-        y = edge_col(i);
-        dir = atan2(gv(x, y), gh(x,y));
-        a_edges = [a_edges Edge(y, x)];
-        b_edges = [b_edges Edge(y+sin(pi+dir)*2*dist, x+cos(pi+dir)*2*dist)];
-        plot([y y+sin(pi+dir)*dist*0.5],[x x+cos(pi+dir)*dist*0.5]);
-        centerlines = [centerlines Edge(y+sin(dir)*dist, x+cos(dir)*dist)];
+dist = max(max(bwdist(~target),[],1));
+if(show_stuff)
+    imshow(edges);
+    hold on;
+end
+
+for(i = 1:max(size(edge_row)))
+    if(mod(i,5) == 0)
+        x1 = edge_row(i);
+        y1 = edge_col(i);
+        dir = atan2(gv(x1,y1), gh(x1,y1));
+        
+        normal = NaN;
+        for(n = 1:round(dist*2))
+            x = round(x1 + cos(dir+pi)*n);
+            y = round(y1 + sin(dir+pi)*n);
+            if(isnan(normal))
+                if(target(x, y) == 0)
+                    normal = [x y];
+                    a_edges = [a_edges Edge(x, y)];
+                    b_edges = [b_edges Edge(x1, y1)];
+                    centerlines = [centerlines Edge(x1 + cos(dir+pi)*dist, ...
+                                    y1 + sin(dir+pi)*dist)]
+                    if(show_ribs)
+                        plot([y1 y],[x1 x],'r');
+                    end
+                end
+            end
+        end
+        if(show_normals)
+            plot([y y+sin(pi+dir)*dist*2],[x x+cos(pi+dir)*dist*2]);
+        end
     end
 end
-if(0)
+
+if(show_stuff)
+    k = waitforbuttonpress();
+end    
+
 % now randomly sample each left/right edge pair
 k = randperm(size(a_edges,2)); 
 selected_left = a_edges(k(1:num_segments));
@@ -64,7 +91,6 @@ selected_right = b_edges(k(1:num_segments));
 selected_centers = centerlines(k(1:num_segments));
 
 % create the mesh
-step = length/num_segments;
 for(i = 1:num_segments)
     % create NODES and SPRINGS
     left_edge  = Node(i*3 - 2, [selected_left(i).i selected_left(i).j],[0 0],10,0.5,1);
@@ -97,6 +123,7 @@ for(i = 1:num_segments)
     end
 end
 
+hold off;
 imshow(edges);
 hold on;
 
@@ -120,6 +147,7 @@ end
 hold off;
 imshow(edges);
 hold on;
+
 log.note(sprintf('\n\n'));
 for(i = 1:system.num_nodes-1)
     circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
@@ -128,5 +156,4 @@ for(i = 1:system.num_nodes-1)
     if(mod(i+1,3))
         plot([system.NODES(i).position(1) system.NODES(i+1).position(1)],[system.NODES(i).position(2) system.NODES(i+1).position(2)]);
     end
-end
 end
