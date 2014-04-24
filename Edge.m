@@ -2,14 +2,20 @@
 
 classdef Edge
     properties
-        i
-        j
+        pos;
     end
     
     methods
         function obj = Edge(x, y)
-            obj.i = y;
-            obj.j = x;
+            obj.pos = [y x];
+        end
+        
+        function num = i(obj)
+            num = obj.pos(1);
+        end
+        
+        function num = j(obj)
+            num = obj.pos(2);
         end
     end
 end

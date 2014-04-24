@@ -10,20 +10,22 @@ num_segments = 10; % number of segments in the skeleton
 num_ticks = 20;    % number of times the soft body model should run
 
 % Display Options
-show_normals = 0;        % show edge normals
-show_ribs = 0;           % show node placement ribs
+show_normals = 1;        % show edge normals
+show_ribs = 1;           % show node placement ribs
 show_node_alignment = 0; % show nodes during each tick of model
 
 % Video Options
 vid = VideoReader('shisto.avi');
-start_frame = 50;
-vid_scale = 0.66;
+start_frame = 2;
+vid_scale = 0.50;
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%% HERE THERE BE DRAGONS %%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% calculate options, pseudo-bitwise
 show_stuff = show_normals + show_ribs + show_node_alignment;
-
-system = ParticleSystem();
-log = Logger('test.log',0,1);
 
 % process image
 first_frame = imresize(read(vid,start_frame),vid_scale);
@@ -33,32 +35,34 @@ for i = 1:3
     background(:,:,i) = roifill(first_frame(:,:,i),mask);
 end
 %%
+% set up soft body and logger
+system = ParticleSystem();
+log = Logger('test.log',0,1);
+num_segments = 10;
+
 % get binary worm fill
-target = rgb2gray(background - first_frame);
-target = imerode(target, ones(2));
-target = imdilate(target, strel('disk',20));
-target = imclose(target,strel('disk',20));
-target = imerode(target, strel('disk',20));
-target = target > 10;
+tgt = rgb2gray(background - first_frame);
+target = process_worm(tgt);
 [edges, tresh, gv, gh] = edge(target,'sobel');
-skel = bwmorph(target, 'skel', Inf); % bwmorph(~target,'endpoints');
+skel = bwmorph(target, 'skel', Inf);
+skel = imdilate(skel, ones(2));
 
 % find edges
 edge_dirs = atan2(gv, gh);
 edge_dirs = edge_dirs(edge_dirs ~= 0);
 [edge_row edge_col] = find(edges);
 
-% calculate normals and fine opposite edges
+% calculate normals and find opposite edges
 a_edges = [];
 b_edges = [];
 centerlines = [];
 dist = max(max(bwdist(~target),[],1));
 if(show_stuff)
-    imshow(edges);
+    imshow(edges + skel);
     hold on;
 end
 
-mod_factor = floor((length(edge_row)/num_segments)/2)
+mod_factor = ceil(length(edge_row)/num_segments)
 
 for(i = 1:length(edge_row))
     if(mod(i,mod_factor) == 0)
@@ -66,26 +70,30 @@ for(i = 1:length(edge_row))
         y1 = edge_col(i);
         dir = atan2(gv(x1,y1), gh(x1,y1));
         
-        if(show_normals)
-            plot([y1 y1+sin(pi+dir)*5],[x1 x1+cos(pi+dir)*5]);
-        end
-        
         normal = NaN;
+        found_center = 0;
         for(n = 1:round(dist*2.5))
             x = round(x1 + cos(dir+pi)*n);
             y = round(y1 + sin(dir+pi)*n);
             if(isnan(normal))
                 if(target(x, y) == 0)
                     normal = [x y];
-                    a_edges = [a_edges Edge(x, y)];
-                    b_edges = [b_edges Edge(x1, y1)];
-                    centerlines = [centerlines Edge(x1 + cos(dir+pi)*dist, ...
-                                    y1 + sin(dir+pi)*dist)];
+                    a_edges = [a_edges Edge(x1, y1)];
+                    b_edges = [b_edges Edge(x, y)];
                     if(show_ribs)
                         plot([y1 y],[x1 x],'r');
                     end
                 end
             end
+            if(~found_center)
+                if(skel(x, y) == 1)
+                    centerlines = [centerlines Edge(x, y)];
+                    found_center = 1;
+                end
+            end
+        end
+        if(show_normals)
+            plot([y1 y1+sin(pi+dir)*5],[x1 x1+cos(pi+dir)*5]);
         end
     end
 end
@@ -94,25 +102,26 @@ if(show_stuff)
     k = waitforbuttonpress();
 end    
 
-% now randomly sample each left/right edge pair
-sort_list = [a_edges; b_edges; centerlines;];
-sort_list = sort(sort_list,2);
-selected_left    = sort_list(1, 1:num_segments);
-selected_right   = sort_list(2, 1:num_segments);
-selected_centers = sort_list(3, 1:num_segments);
+% now sample each left/right edge pair
+k = randperm(size(a_edges,2)); 
+num_segments = length(a_edges);
+selected_left = a_edges(1:num_segments);
+selected_right = b_edges(1:num_segments);
+selected_centers = centerlines(1:num_segments);
 
 % create the mesh
 for(i = 1:num_segments)
+    system.num_nodes
     % create NODES and SPRINGS
-    left_edge  = Node(i*3 - 2, [selected_left(i).i selected_left(i).j],[0 0],10,0.5,1);
-    spine      = Node(i*3 - 1, [selected_centers(i).i selected_centers(i).j],[0 0],10, 0.5);
-    right_edge = Node(i*3, [selected_right(i).i selected_right(i).j],[0 0],10, 0.5, 1);
+    left_edge  = Node(i*3 - 2, [selected_left(i).i    selected_left(i).j],   [0 0],10, 0.5, 0);
+    spine      = Node(i*3 - 1, [selected_centers(i).i selected_centers(i).j],[0 0],10, 0.5, 0);
+    right_edge = Node(i*3,     [selected_right(i).i    selected_right(i).j], [0 0],10, 0.5, 0);
     % a node is spine %
     k = 0.5;
     damp = 0.1;
     spring_id_base = system.num_springs;
-    left_spring  = Spring(spring_id_base + 1, 2, k, damp, spine, left_edge);
-    right_spring = Spring(spring_id_base + 2, 2, k, damp, spine, right_edge);
+    left_spring  = Spring(spring_id_base + 1, 6*vid_scale, k, damp, spine, left_edge);
+    right_spring = Spring(spring_id_base + 2, 6*vid_scale, k, damp, spine, right_edge);
     if(i > 1)
         % a is previous node
         left_connector  = Spring(spring_id_base + 3, 2, k, damp, system.NODES((i-1)*3 - 2), left_edge);
@@ -122,6 +131,7 @@ for(i = 1:num_segments)
     
    % populate lists
     system.add_node(left_edge);
+    system.num_nodes
     system.add_node(spine);
     system.add_node(right_edge);
     
@@ -150,9 +160,9 @@ for(iteration = 1:num_ticks)
         log.warning(num2str(system.NODES(i).position));
         if(show_node_alignment)
             circle(system.NODES(i).position(1), system.NODES(i).position(2), 5);
+            pause(0.1);
         end
     end
-    pause(0.1);
     log.note('-----------------------------');
 end
 
@@ -160,13 +170,64 @@ end
 hold off;
 imshow(edges);
 hold on;
+
 for(i = 1:system.num_nodes)
     this_node = system.NODES(i);
-    circle(this_node.position(1), this_node.position(2), 5);
+    circle(this_node.position(1), this_node.position(2), 3);
     log.warning(num2str(this_node.id));
     log.warning(num2str(this_node.position));
-    for(n = 1:length(this_node.attached_nodes))
-        plot([this_node.position(1) this_node.attached_nodes(n).position(1)],...
-             [this_node.position(2) this_node.attached_nodes(n).position(2)]);
+end
+
+k = waitforbuttonpress();
+%%
+for(frame_num = 1:vid.NumberOfFrames)
+    frame_num
+    frame = imresize(read(vid,frame_num),vid_scale);
+    % process image
+    background = frame;
+    for i = 1:3
+        background(:,:,i) = roifill(frame(:,:,i),mask);
     end
+
+    imshow(edges);
+    hold on;
+    % get binary worm fill
+    tgt = rgb2gray(background - frame);
+    target = process_worm(tgt);
+    edges = edge(target);  
+    [edge_row edge_col] = find(edges);    
+    for(i = 1:length(edge_row))
+        if(mod(i,mod_factor) == 0)
+            x1 = edge_row(i);
+            y1 = edge_col(i);
+            dir = atan2(gv(x1,y1), gh(x1,y1));
+
+            normal = NaN;
+            for(n = 1:round(dist*2.5))
+                x = round(x1 + cos(dir+pi)*n);
+                y = round(y1 + sin(dir+pi)*n);
+                if(isnan(normal))
+                    if(target(x, y) == 0)
+                        normal = [x y]
+                        a_edges = [a_edges Edge(x1, y1)];
+                        b_edges = [b_edges Edge(x, y)];
+                        plot([y1 y],[x1 x],'r');
+                    end
+                end
+            end
+        end
+    end
+    
+    
+    for(i = 1:num_segments)
+        system.NODES(i*3+2).position = a_edges(i).pos;
+        system.NODES(i*3).position = b_edges(i).pos;
+    end
+    
+    %for(i = 1:system.num_nodes)
+    %    this_node = system.NODES(i);
+    %    circle(this_node.position(1), this_node.position(2), 3);
+    %end
+    
+    pause(0.01);
 end
