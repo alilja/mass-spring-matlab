@@ -15,10 +15,8 @@ vid = VideoReader('shisto.avi');
 start_frame = 2;
 vid_scale = 0.50;
 
-% just measure length of the normal: if it's very very short, then flip it
-% around
-% alternatively, figure out if we're inside the worm or not. if we are,
-% great, otherwise flip it around
+system = ParticleSystem();
+log = Logger('test.log',0,1);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% HERE THERE BE DRAGONS %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,7 +26,7 @@ first_frame = imresize(read(vid,start_frame),vid_scale);
 mask = roipoly(first_frame);
 
 %%
-for frame_num = 1:vid.NumberOfFrames
+for frame_num = start_frame:vid.NumberOfFrames
     frame_num
     frame = imresize(read(vid,frame_num),vid_scale);
     % process image
@@ -43,7 +41,7 @@ for frame_num = 1:vid.NumberOfFrames
     bin2 = sub2 > 10;
     bin2 = bwareaopen(bin2,50);
     bin2 = process_worm(sub2);
-    average_width = 7;
+    
     edges = edge(bin2,'canny',.1);
     blob = bin2;%imfill(bwmorph(edges,'dilate',2),'holes');
     skel = bwmorph(blob,'thin', inf);
@@ -75,7 +73,7 @@ for frame_num = 1:vid.NumberOfFrames
     a_edges = [];
     b_edges = [];
     search_target = imdilate(edges,ones(2));
-    imshow(search_target);
+    imshow(search_target + skel);
     hold on;
     for i = 1:num_segments
         seg_x = attachment_points(i,2);
@@ -112,6 +110,44 @@ for frame_num = 1:vid.NumberOfFrames
         end
                 
     end
+    if(frame_num == start_frame)
+        for(i = 1:num_segments)
+            system.num_nodes
+            % create NODES and SPRINGS
+            left_edge  = Node(i*3 - 2, [a_edges(i).i    a_edges(i).j],   [0 0],10, 0.5, 0);
+            spine      = Node(i*3 - 1, [attachment_points(i,2) attachment_points(i,1)],[0 0],10, 0.5, 0);
+            right_edge = Node(i*3,     [b_edges(i).i    b_edges(i).j], [0 0],10, 0.5, 0);
+            % a node is spine %
+            k = 0.5;
+            damp = 0.1;
+            spring_id_base = system.num_springs;
+            left_spring  = Spring(spring_id_base + 1, 6*vid_scale, k, damp, spine, left_edge);
+            right_spring = Spring(spring_id_base + 2, 6*vid_scale, k, damp, spine, right_edge);
+            if(i > 1)
+                % a is previous node
+                left_connector  = Spring(spring_id_base + 3, 2, k, damp, system.NODES((i-1)*3 - 2), left_edge);
+                spine_connector = Spring(spring_id_base + 4, 2, k, damp, system.NODES((i-1)*3 - 1), spine);
+                right_connector = Spring(spring_id_base + 5, 2, k, damp, system.NODES((i-1)*3), right_edge);
+            end
+
+           % populate lists
+            system.add_node(left_edge);
+            system.num_nodes
+            system.add_node(spine);
+            system.add_node(right_edge);
+
+            system.add_spring(left_spring);
+            system.add_spring(right_spring);
+            if(i > 1)
+                system.add_spring(left_connector);
+                system.add_spring(spine_connector);
+                system.add_spring(right_connector);
+            end
+        end
+    end
+    for(i = 1:system.num_nodes)
+        this_node = system.NODES(i);
+        circle(this_node.position(1), this_node.position(2), 3);
+    end
     pause(0.01);
-    k = waitforbuttonpress();
 end

@@ -11,11 +11,11 @@ classdef Edge
         end
         
         function num = i(obj)
-            num = obj.pos(1);
+            num = obj.pos(2);
         end
         
         function num = j(obj)
-            num = obj.pos(2);
+            num = obj.pos(1);
         end
     end
 end
