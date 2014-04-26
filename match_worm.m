@@ -8,9 +8,7 @@ num_segments = 10; % number of segments in the skeleton
 num_ticks = 20;    % number of times the soft body model should run
 
 % Display Options
-show_normals = 1;        % show edge normals
-show_ribs = 0;           % show node placement ribs
-show_node_alignment = 0; % show nodes during each tick of model
+show_normals = 1; % show edge normals
 
 % Video Options
 vid = VideoReader('shisto.avi');
@@ -23,6 +21,7 @@ log = Logger('test.log',0,1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% HERE THERE BE DRAGONS %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 first_frame = imresize(read(vid,start_frame),vid_scale);
 mask = roipoly(first_frame);
@@ -64,9 +63,7 @@ for frame_num = start_frame:vid.NumberOfFrames
     diff(1,:) = [attachment_points(end,1) - attachment_points(1,1); ...
                attachment_points(end,2) - attachment_points(1,2)];
          
-    circle(attachment_points(1,2),attachment_points(1,1),5);
     for i = 2:num_segments
-        circle(attachment_points(i,2),attachment_points(i,1),5);
         diff(i,:) = [attachment_points(end,1) - attachment_points(1,1); ...
                      attachment_points(end,2) - attachment_points(1,2)];
     end
@@ -102,7 +99,9 @@ for frame_num = start_frame:vid.NumberOfFrames
                 if(isnan(a_normal))
                     a_normal = [a_x a_y];
                     a_edges = [a_edges Edge(a_x, a_y)];
-                    plot([seg_x a_x],[seg_y a_y]);
+                    if(show_normals)
+                        plot([seg_x a_x],[seg_y a_y]);
+                    end
                 end
             end
             
@@ -110,11 +109,12 @@ for frame_num = start_frame:vid.NumberOfFrames
                 if(isnan(b_normal))
                     b_normal = [b_x b_y];
                     b_edges = [b_edges Edge(b_x, b_y)];
-                    plot([seg_x b_x],[seg_y b_y],'r');
+                    if(show_normals)
+                        plot([seg_x b_x],[seg_y b_y],'r');
+                    end
                 end
             end
-        end
-                
+        end               
     end
     
     if(frame_num > start_frame)
@@ -136,7 +136,6 @@ for frame_num = start_frame:vid.NumberOfFrames
         end            
     else
         for(i = 1:num_segments)
-            system.num_nodes
             % create NODES and SPRINGS
             left_edge  = Node(i*3 - 2, [a_edges(i).i    a_edges(i).j],   [0 0],10, 0.5, 1);
             spine      = Node(i*3 - 1, [attachment_points(i,2) attachment_points(i,1)],[0 0],10, 0.5, 0);
@@ -156,7 +155,6 @@ for frame_num = start_frame:vid.NumberOfFrames
 
            % populate lists
             system.add_node(left_edge);
-            system.num_nodes
             system.add_node(spine);
             system.add_node(right_edge);
 
@@ -170,7 +168,6 @@ for frame_num = start_frame:vid.NumberOfFrames
         end
     end
     for(iteration = 1:num_ticks)
-        iteration
         system.tick();
     end
     for(i = 1:system.num_nodes)
