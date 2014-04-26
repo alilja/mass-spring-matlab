@@ -44,5 +44,10 @@ classdef Node < handle
                 obj.position = old_pos;
             end
         end
+        
+        function obj = reset_physics(obj)
+            obj.velocity = [0 0];
+            obj.force = [0 0];
+        end
     end    
 end

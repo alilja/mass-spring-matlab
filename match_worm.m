@@ -1,3 +1,5 @@
+clear;
+clf;
 %%%%%%%%%%%
 % OPTIONS %
 %%%%%%%%%%%
@@ -55,8 +57,8 @@ for frame_num = start_frame:vid.NumberOfFrames
     attachment_points = skel_handles_pixels([geo_x geo_y], num_segments);
     
     %imshow(skel + edge(blob));
-    imshow(rgb2gray(frame) + uint8(bin2)* 50);
-    hold on;
+    %imshow(rgb2gray(frame) + uint8(bin2)* 50);
+    %hold on;
     
     diff = zeros([num_segments 2]);
     diff(1,:) = [attachment_points(end,1) - attachment_points(1,1); ...
@@ -65,16 +67,20 @@ for frame_num = start_frame:vid.NumberOfFrames
     circle(attachment_points(1,2),attachment_points(1,1),5);
     for i = 2:num_segments
         circle(attachment_points(i,2),attachment_points(i,1),5);
-        diff(1,:) = [attachment_points(i,1) - attachment_points(i-1,1); ...
-                     attachment_points(i,2) - attachment_points(i-1,2)];
+        diff(i,:) = [attachment_points(end,1) - attachment_points(1,1); ...
+                     attachment_points(end,2) - attachment_points(1,2)];
     end
        
     angles = atan2(diff(:,1),diff(:,2));
     a_edges = [];
     b_edges = [];
     search_target = imdilate(edges,ones(2));
-    imshow(search_target + skel);
+    
+    hold off;
+    %imshow(search_target + skel);
+    imshow(frame);
     hold on;
+    
     for i = 1:num_segments
         seg_x = attachment_points(i,2);
         seg_y = attachment_points(i,1);
@@ -83,8 +89,8 @@ for frame_num = start_frame:vid.NumberOfFrames
         dir = angles(i);
         for n = 1:round(3*dist)+1
             n = n - 1;
-            a_x = round(seg_x + cos(dir+pi/2)*n)
-            a_y = round(seg_y + sin(dir+pi/2)*n)
+            a_x = round(seg_x + cos(dir+pi/2)*n);
+            a_y = round(seg_y + sin(dir+pi/2)*n);
             
             b_x = round(seg_x + cos(dir-pi/2)*n);
             b_y = round(seg_y + sin(dir-pi/2)*n);
@@ -110,13 +116,31 @@ for frame_num = start_frame:vid.NumberOfFrames
         end
                 
     end
-    if(frame_num == start_frame)
+    
+    if(frame_num > start_frame)
+        for i = 1:num_segments
+            i
+            right_node = system.NODES(i*3);
+            center_node = system.NODES(i*3-1);
+            left_node = system.NODES(i*3-2);
+            
+            right_node.position(1) = a_edges(i).i;
+            right_node.position(2) = a_edges(i).j;
+            
+            left_node.position(1) = b_edges(i).i;
+            left_node.position(2) = b_edges(i).j;
+            
+            right_node.reset_physics;
+            center_node.reset_physics;
+            left_node.reset_physics;
+        end            
+    else
         for(i = 1:num_segments)
             system.num_nodes
             % create NODES and SPRINGS
-            left_edge  = Node(i*3 - 2, [a_edges(i).i    a_edges(i).j],   [0 0],10, 0.5, 0);
+            left_edge  = Node(i*3 - 2, [a_edges(i).i    a_edges(i).j],   [0 0],10, 0.5, 1);
             spine      = Node(i*3 - 1, [attachment_points(i,2) attachment_points(i,1)],[0 0],10, 0.5, 0);
-            right_edge = Node(i*3,     [b_edges(i).i    b_edges(i).j], [0 0],10, 0.5, 0);
+            right_edge = Node(i*3,     [b_edges(i).i    b_edges(i).j], [0 0],10, 0.5, 1);
             % a node is spine %
             k = 0.5;
             damp = 0.1;
@@ -145,9 +169,19 @@ for frame_num = start_frame:vid.NumberOfFrames
             end
         end
     end
+    for(iteration = 1:num_ticks)
+        iteration
+        system.tick();
+    end
     for(i = 1:system.num_nodes)
         this_node = system.NODES(i);
-        circle(this_node.position(1), this_node.position(2), 3);
+        %circle(this_node.position(1), this_node.position(2), 3);
+        % draw mesh
+        for(n = 1:length(this_node.attached_nodes))
+            plot([this_node.position(1) this_node.attached_nodes(n).position(1)],...
+              [this_node.position(2) this_node.attached_nodes(n).position(2)],'g');
+        end
     end
+    
     pause(0.01);
 end
