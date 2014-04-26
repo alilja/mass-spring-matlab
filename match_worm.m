@@ -8,11 +8,11 @@ num_segments = 10; % number of segments in the skeleton
 num_ticks = 20;    % number of times the soft body model should run
 
 % Display Options
-show_normals = 1; % show edge normals
+show_normals = 0; % show edge normals
 
 % Video Options
 vid = VideoReader('shisto.avi');
-start_frame = 2;
+start_frame = 400;
 vid_scale = 0.50;
 
 system = ParticleSystem();
@@ -37,10 +37,11 @@ for frame_num = start_frame:vid.NumberOfFrames
     end
     
     %find bw
-    sub2 = uint8(abs(double(background) - double(frame)));
+    %sub2 = uint8(abs(double(background) - double(frame)));
+    %sub2 = rgb2gray(sub2);
+    %bin2 = sub2 > 10;
+    %bin2 = bwareaopen(bin2,50);
     sub2 = rgb2gray(background - frame);
-    bin2 = sub2 > 10;
-    bin2 = bwareaopen(bin2,50);
     bin2 = process_worm(sub2);
     
     edges = edge(bin2,'canny',.1);
